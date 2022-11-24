@@ -15,6 +15,7 @@ class SNMP_runner:
     def __init__(self, runtime=r"C:\usr\bin"):
         os.chdir(runtime)
         self.runtime = runtime + ">"
+        self._last_cmd = "[NOT RUN ANY COMMAND]"
         #
 
         print("snmp runtime path:", os.getcwd())
@@ -41,6 +42,7 @@ class SNMP_runner:
 
     def _exec_cmd(self, cmd):
         res = ""
+        self._last_cmd = cmd
         try:
             res = subprocess.check_output(cmd).decode('utf-8')
         except CalledProcessError as e:
@@ -122,5 +124,63 @@ class SNMP_runner:
         if raw_return == "":
             print(" === WARNNING: THIS COMMAND NO RESPONSE ===")
             print(cmd)
+
+    def multiple_get(self, idx, fields_list: list, show=True):
+        cmd = GET_COMMAND
+        cmd_history = []
+        _cmd = []
+        for i, field_name in enumerate(fields_list):
+            _tmp_cmd = cmd+field_name+f".{idx}"
+            raw_return = self._exec_cmd(_tmp_cmd)
+            _cmd.append(_tmp_cmd)
+            cmd_history.append(self.get_last_cmd_and_prompt())
+            cmd_history.append(raw_return)
+            if show:
+                print(f"# {i+1}")
+                print(self.get_last_cmd_and_prompt())
+                print(raw_return)
+        print(" =========== commands ============= ")
+        for _ in _cmd:
+            print(_)
+
+        return cmd_history
+
+    def get_last_cmd_and_prompt(self):
+        return self.runtime+self._last_cmd
+
+
+    def multi_string_2_list(self, instr):
+        fine_ = []
+        for __ in [_.strip() for _ in instr.splitlines()]:
+            if len(__) > 0:
+                fine_.append(__)
+        return fine_
+
+
+if __name__ == "__main__":
+    snmp = SNMP_runner()
+    fields_list = ['iswEtherStatsDropEvents',
+     'iswEtherStatsOctets',
+     'iswEtherStatsPkts',
+     'iswEtherStatsBroadcastPkts',
+     'iswEtherStatsMulticastPkts',
+     'iswEtherStatsCRCAlignErrors',
+     'iswEtherStatsUndersizePkts',
+     'iswEtherStatsOversizePkts',
+     'iswEtherStatsFragments',
+     'iswEtherStatsJabbers',
+     'iswEtherStatsCollisions',
+     'iswEtherStatsPkts64Octets',
+     'iswEtherStatsPks65to127Octets',
+     'iswEtherStatsPkts128to255Octets',
+     'iswEtherStatsPkts256to511Octets',
+     'iswEtherStatsPkts512to1023Octets',
+     'iswEtherStatsPkts1024to1518Octets',
+     'iswEtherStatsClear']
+    res = snmp.multiple_get(1, fields_list)
+
+    for _ in res:
+        print(_)
+
 
 
