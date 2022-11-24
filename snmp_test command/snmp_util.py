@@ -2,7 +2,7 @@ import os
 import subprocess
 from pathlib import Path
 from subprocess import CalledProcessError
-from data_struct import Field
+from data_struct import Field, Recoder_history
 import sys
 
 MY_IP = "172.16.10.8"
@@ -16,11 +16,29 @@ class SNMP_runner:
         os.chdir(runtime)
         self.runtime = runtime + ">"
         self._last_cmd = "[NOT RUN ANY COMMAND]"
+        self._recoder_history = []
+        self.__recoder_enable = False
         #
 
         print("snmp runtime path:", os.getcwd())
         print("============= init =============\n")
         self.command_saver = []
+
+    def get_history(self):
+        return self._recoder_history
+
+
+    def __enter__(self):
+        self.__recoder_enable = True
+        self._recoder_history = Recoder_history([])
+        return self._recoder_history
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__recoder_enable = False
+
+        print("exc_type, exc_val, exc_tb:", exc_type, exc_val, exc_tb)
+
+
 
     def check_obj_name(self, name):
         if len(str(name).split(' ')) >= 2:
@@ -40,11 +58,18 @@ class SNMP_runner:
             print(" === WARNNING: THIS COMMAND NO RESPONSE ===")
             print(cmd)
 
+    def __recode_cmd(self, cmd):
+        print("self.__recoder_enable:", self.__recoder_enable)
+        if self.__recoder_enable:
+            print("recode !!")
+            self._recoder_history.append(cmd)
+
     def _exec_cmd(self, cmd):
         res = ""
         self._last_cmd = cmd
         try:
             res = subprocess.check_output(cmd).decode('utf-8')
+            self.__recode_cmd(cmd)
         except CalledProcessError as e:
             print(" ================= CalledProcessError occur ================")
             print(e)

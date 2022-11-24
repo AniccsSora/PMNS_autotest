@@ -22,3 +22,15 @@ class Field:
             raise NotImplementedError("not support dtype:", self.dtype)
 
         return res
+
+
+class Recoder_history:
+    def __init__(self, ll: list):
+        self.history = ll
+
+    def show(self):
+        for i in self.history:
+            print(i)
+
+    def append(self, item):
+        self.history.append(item)
