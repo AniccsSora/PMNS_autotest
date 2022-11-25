@@ -18,17 +18,34 @@ class SNMP_runner:
         self._last_cmd = "[NOT RUN ANY COMMAND]"
         self._recoder_history = []
         self.__recoder_enable = False
+        self.__clipboard = ""
         #
 
         print("snmp runtime path:", os.getcwd())
         print("============= init =============\n")
         self.command_saver = []
 
+    def print2copyboard(self, *args, **kwargs):
+        _tmp = self.__clipboard
+        args_res = " ".join(args)
+        args_res += '\n'
+        self.__clipboard = f"{_tmp}{args_res}"
+        print(*args, **kwargs)
+
+    def get_clipboard(self):
+        return self.__clipboard
+
+    def clear_clipboard(self):
+        self.__clipboard = ""
+    def export_copyboard_and_clear(self):
+        _tmp = self.__clipboard
+        self.__clipboard = ""
+        return _tmp
     def recoder_enable_state(self):
         return self.__recoder_enable
+
     def get_history(self):
         return self._recoder_history
-
 
     def __enter__(self):
         self.__recoder_enable = True
@@ -39,8 +56,6 @@ class SNMP_runner:
         self.__recoder_enable = False
 
         print("exc_type, exc_val, exc_tb:", exc_type, exc_val, exc_tb)
-
-
 
     def check_obj_name(self, name):
         if len(str(name).split(' ')) >= 2:
@@ -54,8 +69,8 @@ class SNMP_runner:
             with open(Path(fptr), mode=recorard_mode, encoding='utf-8') as f:
                 f.write(f"{self.runtime}{cmd}".replace("\n", ""))  # first command
                 f.write(f"{raw_return}".replace("\n", ""))  # command output
-        print(f"{self.runtime}{cmd}")  # first command
-        print(f"{raw_return}")  # command output
+        self.print2copyboard(f"{self.runtime}{cmd}")  # first command
+        self.print2copyboard(f"{raw_return}")  # command output
         if raw_return == "":
             print(" === WARNNING: THIS COMMAND NO RESPONSE ===")
             print(cmd)
@@ -83,7 +98,6 @@ class SNMP_runner:
 
         return res
 
-
     def get(self, obj_name, idx, fptr=r"C:\Users\User\Desktop\123.txt", recorard_mode='w'):
         cmd = GET_COMMAND + obj_name + f".{idx}"
         raw_return = self._exec_cmd(cmd)
@@ -92,9 +106,9 @@ class SNMP_runner:
                 f.write("\n# get\n")
                 f.write(f"{self.runtime}{cmd}\n")  # first command
                 f.writelines(raw_return)  # command output
-        print("# get")
-        print(f"{self.runtime}{cmd}")  # first command
-        print(f"{raw_return}")  # command output
+        self.print2copyboard("# get")
+        self.print2copyboard(f"{self.runtime}{cmd}")  # first command
+        self.print2copyboard(f"{raw_return}")  # command output
 
     def set(self, obj_name, idx, val, dtype='int', fptr=r"C:\Users\User\Desktop\123.txt", recorard_mode='w'):
         """
@@ -114,9 +128,9 @@ class SNMP_runner:
                 f.write("\n# set\n")
                 f.write(f"{self.runtime}{cmd}\n")  # first command
                 f.writelines(raw_return)  # command output
-        print("# set")
-        print(f"{self.runtime}{cmd}")  # first command
-        print(f"{raw_return}")  # command output
+        self.print2copyboard("# set")
+        self.print2copyboard(f"{self.runtime}{cmd}")  # first command
+        self.print2copyboard(f"{raw_return}")  # command output
 
     def test_ShowSetShow(self, obj_name, idx, val):
         self.get(obj_name, idx, recorard_mode='w')
@@ -144,8 +158,8 @@ class SNMP_runner:
             cmd += field.idx(idx)
         raw_return = ""
         raw_return = self._exec_cmd(cmd)
-        print(f"{self.runtime}{cmd}")  # first command
-        print(f"{raw_return}")  # command output
+        self.print2copyboard(f"{self.runtime}{cmd}")  # first command
+        self.print2copyboard(f"{raw_return}")  # command output
         if raw_return == "":
             print(" === WARNNING: THIS COMMAND NO RESPONSE ===")
             print(cmd)
