@@ -24,6 +24,8 @@ class SNMP_runner:
         print("============= init =============\n")
         self.command_saver = []
 
+    def recoder_enable_state(self):
+        return self.__recoder_enable
     def get_history(self):
         return self._recoder_history
 
@@ -59,9 +61,7 @@ class SNMP_runner:
             print(cmd)
 
     def __recode_cmd(self, cmd):
-        print("self.__recoder_enable:", self.__recoder_enable)
         if self.__recoder_enable:
-            print("recode !!")
             self._recoder_history.append(cmd)
 
     def _exec_cmd(self, cmd):
