@@ -16,6 +16,8 @@ class Field:
             res = f"{self.fname}.{idx} = {self.val} "
         elif self.dtype == 'str':
             res = f"{self.fname}.{idx} = \"{self.val}\" "
+        elif self.dtype == 'ip':
+            res = f"{self.fname}.{idx} = {self.val} "
         # elif self.dtype == 'OTHER_DTYPE':
         #    res = f"{self.fname}.{idx} x \"{self.val}\""
         else:
@@ -56,6 +58,7 @@ class Recoder_history:
         self.__put_history_by_define(item, self.set_history, Recoder_history.SET_CMD_DEFINE)
 
     def get_history(self):
+        "\r\n".join(self.history)
         return self.history
     def get_set_history(self, no_list_format=True):
         res = self.set_history

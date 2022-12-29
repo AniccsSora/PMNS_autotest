@@ -45,7 +45,7 @@ class SNMP_runner:
         return self.__recoder_enable
 
     def get_history(self):
-        return self._recoder_history
+        return "\r\n".join(self._recoder_history)
 
     def __enter__(self):
         self.__recoder_enable = True
@@ -87,7 +87,26 @@ class SNMP_runner:
             self.__recode_cmd(cmd)
         except CalledProcessError as e:
             print(" ================= CalledProcessError occur ================")
+            #print(e)
+            print(f"COMMAND = {cmd}\n")
+            sys.exit(-1)
+        except Exception as e:
+            print(" ================= general exception ================")
             print(e)
+            print(f"COMMAND = {cmd}\n")
+            sys.exit(-1)
+
+        return res
+
+    def _exec_bad_cmd(self, cmd):
+        res = ""
+        self._last_cmd = cmd
+        try:
+            res = subprocess.check_output(cmd).decode('utf-8')
+            self.__recode_cmd(cmd)
+        except CalledProcessError as e:
+            print(" ================= CalledProcessError occur ================")
+            # print(e)
             print(f"COMMAND = {cmd}\n")
             sys.exit(-1)
         except Exception as e:
@@ -110,7 +129,8 @@ class SNMP_runner:
         self.print2copyboard(f"{self.runtime}{cmd}")  # first command
         self.print2copyboard(f"{raw_return}")  # command output
 
-    def set(self, obj_name, idx, val, dtype='int', fptr=r"C:\Users\User\Desktop\123.txt", recorard_mode='w'):
+    def set(self, obj_name, idx, val, dtype='int', fptr=r"C:\Users\User\Desktop\123.txt", recorard_mode='w',
+            bad_test=False):
         """
         只允許設訂單一 field.
         """
@@ -118,10 +138,15 @@ class SNMP_runner:
             cmd = SET_COMMAND + obj_name + f".{idx}" + " = " + str(val)
         elif dtype == 'str':
             cmd = SET_COMMAND + obj_name + f".{idx}" + " = " + f"\"{str(val)}\""
+        elif dtype == 'ip':
+            cmd = SET_COMMAND + obj_name + f".{idx}" + " = " + f"{str(val)}"
         else:
             assert 0  # please assign dtype
         raw_return = None
-        raw_return = self._exec_cmd(cmd)
+        if not bad_test:
+            raw_return = self._exec_cmd(cmd)
+        else:
+            raw_return = self._exec_bad_cmd()
         self.command_saver.append(cmd)
         if fptr is not None:
             with open(Path(fptr), recorard_mode, encoding='utf-8') as f:
@@ -137,14 +162,14 @@ class SNMP_runner:
         self.set(obj_name, idx, val=val, recorard_mode='a')
         self.get(obj_name, idx, recorard_mode='a')
 
-    def test_get_continue_set(self, obj_name, idx, val_list):
+    def test_get_continue_set(self, obj_name, idx, val_list, dtype='int'):
         """
         測試連續數值, 多筆但不同value 測試。
         """
         self.command_saver = []
         self.get(obj_name, idx, recorard_mode='w')
         for val in val_list:
-            self.set(obj_name, idx, val=val, recorard_mode='a')
+            self.set(obj_name, idx, val=val, recorard_mode='a', dtype=dtype)
         self.get(obj_name, idx, recorard_mode='a')
 
         for _ in self.command_saver:
@@ -164,7 +189,7 @@ class SNMP_runner:
             print(" === WARNNING: THIS COMMAND NO RESPONSE ===")
             print(cmd)
 
-    def multiple_get(self, idx, fields_list: list, show=True):
+    def multiple_get(self, idx, fields_list: list):
         cmd = GET_COMMAND
         cmd_history = []
         _cmd = []
@@ -174,14 +199,10 @@ class SNMP_runner:
             _cmd.append(_tmp_cmd)
             cmd_history.append(self.get_last_cmd_and_prompt())
             cmd_history.append(raw_return)
-            if show:
-                print(f"# {i+1}")
-                print(self.get_last_cmd_and_prompt())
-                print(raw_return)
-        print(" =========== commands ============= ")
-        for _ in _cmd:
-            print(_)
-
+            #
+            self.print2copyboard(f"# {i+1}")
+            self.print2copyboard(self.get_last_cmd_and_prompt())
+            self.print2copyboard(raw_return)
         return cmd_history
 
     def get_last_cmd_and_prompt(self):
@@ -198,28 +219,17 @@ class SNMP_runner:
 
 if __name__ == "__main__":
     snmp = SNMP_runner()
-    fields_list = ['iswEtherStatsDropEvents',
-     'iswEtherStatsOctets',
-     'iswEtherStatsPkts',
-     'iswEtherStatsBroadcastPkts',
-     'iswEtherStatsMulticastPkts',
-     'iswEtherStatsCRCAlignErrors',
-     'iswEtherStatsUndersizePkts',
-     'iswEtherStatsOversizePkts',
-     'iswEtherStatsFragments',
-     'iswEtherStatsJabbers',
-     'iswEtherStatsCollisions',
-     'iswEtherStatsPkts64Octets',
-     'iswEtherStatsPks65to127Octets',
-     'iswEtherStatsPkts128to255Octets',
-     'iswEtherStatsPkts256to511Octets',
-     'iswEtherStatsPkts512to1023Octets',
-     'iswEtherStatsPkts1024to1518Octets',
-     'iswEtherStatsClear']
-    res = snmp.multiple_get(1, fields_list)
+    # string val setting
+    obj_name = "iswFTPFileName"
+    idx = 0
+    val = "abcdefghijklmnopqrstuvwxyz012345" * 2
 
-    for _ in res:
-        print(_)
+    with snmp as history:
+        snmp.set(obj_name, idx, val, dtype='str')
+        snmp.get(obj_name, idx)
+        print(history.get_set_history())
+        print(snmp.export_copyboard_and_clear())
+
 
 
 

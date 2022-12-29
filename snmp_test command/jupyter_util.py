@@ -44,6 +44,7 @@ def should_run_on_jupyter(func):
 
 def __get_copyboard_templete_HTML(text="text\nto\ncopy"):
     RAND_ID = get_random_id()
+    #print(f"TEXT = \"{text}\"")
     import time
     time.sleep(0.3)
     templete_head = f"""
