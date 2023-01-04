@@ -105,10 +105,11 @@ class SNMP_runner:
             res = subprocess.check_output(cmd).decode('utf-8')
             self.__recode_cmd(cmd)
         except CalledProcessError as e:
-            print(" ================= CalledProcessError occur ================")
+            print(" for test ================= CalledProcessError occur ================\n")
             # print(e)
-            print(f"COMMAND = {cmd}\n")
-            sys.exit(-1)
+            print(f"COMMAND = {cmd}")
+            print("           ^^^^^^^^^^^^^^^ bad command ^^^^^^^^^^^^^^^\n")
+            ##sys.exit(-1) just keep go
         except Exception as e:
             print(" ================= general exception ================")
             print(e)
@@ -146,7 +147,7 @@ class SNMP_runner:
         if not bad_test:
             raw_return = self._exec_cmd(cmd)
         else:
-            raw_return = self._exec_bad_cmd()
+            raw_return = self._exec_bad_cmd(cmd)
         self.command_saver.append(cmd)
         if fptr is not None:
             with open(Path(fptr), recorard_mode, encoding='utf-8') as f:
@@ -162,14 +163,14 @@ class SNMP_runner:
         self.set(obj_name, idx, val=val, recorard_mode='a')
         self.get(obj_name, idx, recorard_mode='a')
 
-    def test_get_continue_set(self, obj_name, idx, val_list, dtype='int'):
+    def test_get_continue_set(self, obj_name, idx, val_list, dtype='int', bad_test=False):
         """
         測試連續數值, 多筆但不同value 測試。
         """
         self.command_saver = []
         self.get(obj_name, idx, recorard_mode='w')
         for val in val_list:
-            self.set(obj_name, idx, val=val, recorard_mode='a', dtype=dtype)
+            self.set(obj_name, idx, val=val, recorard_mode='a', dtype=dtype, bad_test=bad_test)
         self.get(obj_name, idx, recorard_mode='a')
 
         for _ in self.command_saver:
